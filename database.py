@@ -22,7 +22,8 @@ def inicializar_db():
                     monto_gs INTEGER NOT NULL,
                     metodo_pago TEXT NOT NULL,
                     nombre_clienta TEXT,
-                    vendedora TEXT NOT NULL
+                    vendedora TEXT NOT NULL,
+                    descripcion_prenda TEXT
                 )
             ''')
             conn.commit()
@@ -31,16 +32,16 @@ def inicializar_db():
         finally:
             conn.close()
 
-def registrar_venta(monto, metodo_pago, nombre_clienta, vendedora):
+def registrar_venta(monto, metodo_pago, nombre_clienta, vendedora, descripcion_prenda):
     conn = crear_conexion()
     if conn is not None:
         try:
             cursor = conn.cursor()
             fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             cursor.execute('''
-                INSERT INTO ventas (fecha_hora, monto_gs, metodo_pago, nombre_clienta, vendedora)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (fecha_actual, monto, metodo_pago, nombre_clienta, vendedora))
+                INSERT INTO ventas (fecha_hora, monto_gs, metodo_pago, nombre_clienta, vendedora, descripcion_prenda)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (fecha_actual, monto, metodo_pago, nombre_clienta, vendedora, descripcion_prenda))
             conn.commit()
             return True
         except sqlite3.Error as e:
@@ -58,7 +59,6 @@ def obtener_datos_ventas():
     return pd.DataFrame()
 
 def eliminar_venta(id_venta):
-    """Elimina un registro específico por su ID"""
     conn = crear_conexion()
     if conn is not None:
         try:
