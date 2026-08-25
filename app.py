@@ -1,5 +1,7 @@
 import streamlit as st
 import database as db
+import requests
+from datetime import datetime
 
 st.set_page_config(page_title="Seminuevaspy - Sistema", page_icon="👗", layout="wide")
 
@@ -14,7 +16,6 @@ tab1, tab2, tab3 = st.tabs(["📝 Registrar Venta", "📊 Tablero Financiero", "
 with tab1:
     st.subheader("Nueva Venta")
     with st.form("formulario_ventas", clear_on_submit=True):
-        # value=None hace que el campo empiece vacío
         monto = st.number_input("Monto de la venta (₲)", min_value=0, step=10000, format="%d", value=None, placeholder="Ej: 150000")
         
         col1, col2 = st.columns(2)
@@ -30,8 +31,28 @@ with tab1:
         
         if submit:
             if monto is not None and monto > 0:
+                # 1. Guardar en la base de datos local
                 exito = db.registrar_venta(monto, metodo, clienta, vendedora, descripcion)
+                
                 if exito:
+                    # 2. MAGIA: Enviar a Google Sheets en tiempo real
+                    try:
+                        url_google = "https://script.google.com/macros/s/AKfycbz3zNS-lKU7boNBPQy0GSV3jGjjzvs1EI5XJ47nqUhk2DpDXZTlDwyS3BorUKEqtns1HQ/exec"
+                        fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        
+                        datos_venta = {
+                            "fecha_hora": fecha_actual,
+                            "monto_gs": monto,
+                            "metodo_pago": metodo,
+                            "descripcion_prenda": descripcion if descripcion else "Sin descripción",
+                            "nombre_clienta": clienta if clienta else "Cliente casual",
+                            "vendedora": vendedora
+                        }
+                        # Disparamos los datos hacia la nube
+                        requests.post(url_google, json=datos_venta)
+                    except:
+                        pass # Si falla el internet un segundo, no pasa nada, se guardó localmente
+                    
                     st.success(f"✅ Venta de ₲ {monto:,} guardada correctamente.")
                 else:
                     st.error("❌ Hubo un error al guardar la venta.")
@@ -73,7 +94,6 @@ with tab3:
     df_ventas_admin = db.obtener_datos_ventas()
     
     if not df_ventas_admin.empty:
-        # Reordenamos las columnas para que la descripción se vea bien
         columnas_ordenadas = ['id', 'fecha_hora', 'monto_gs', 'metodo_pago', 'descripcion_prenda', 'nombre_clienta', 'vendedora']
         df_mostrar = df_ventas_admin[columnas_ordenadas]
         
