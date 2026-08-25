@@ -36,7 +36,7 @@ with tab1:
                 if exito:
                     # --- MODO DETECTIVE ACTIVADO ---
                     try:
-                        url_google = "https://script.google.com/macros/s/AKfycbz3zNS-lKU7boNBPQy0GSV3jGjjzvs1EI5XJ47nqUhk2DpDXZTlDwyS3BorUKEqtns1HQ/exec"
+                        url_google = "https://script.google.com/macros/s/AKfycbyQt3JUla-NxIEsTj8U0rKohwx6A6FLh9DwoKSgnYRZegdx13UylKoQC9r-SDq0DAXJ0Q/exec"
                         fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                         
                         datos_venta = {
