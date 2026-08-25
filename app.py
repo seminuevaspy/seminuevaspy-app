@@ -31,11 +31,10 @@ with tab1:
         
         if submit:
             if monto is not None and monto > 0:
-                # 1. Guardar en la base de datos local
                 exito = db.registrar_venta(monto, metodo, clienta, vendedora, descripcion)
                 
                 if exito:
-                    # 2. MAGIA: Enviar a Google Sheets en tiempo real
+                    # --- MODO DETECTIVE ACTIVADO ---
                     try:
                         url_google = "https://script.google.com/macros/s/AKfycbz3zNS-lKU7boNBPQy0GSV3jGjjzvs1EI5XJ47nqUhk2DpDXZTlDwyS3BorUKEqtns1HQ/exec"
                         fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -48,14 +47,25 @@ with tab1:
                             "nombre_clienta": clienta if clienta else "Cliente casual",
                             "vendedora": vendedora
                         }
-                        # Disparamos los datos hacia la nube
-                        requests.post(url_google, json=datos_venta)
-                    except:
-                        pass # Si falla el internet un segundo, no pasa nada, se guardó localmente
-                    
-                    st.success(f"✅ Venta de ₲ {monto:,} guardada correctamente.")
+                        
+                        respuesta = requests.post(url_google, json=datos_venta)
+                        
+                        try:
+                            respuesta_json = respuesta.json()
+                            if respuesta_json.get("status") == "exito":
+                                st.success(f"✅ Venta de ₲ {monto:,} guardada localmente y en EXCEL.")
+                            else:
+                                st.error(f"⚠️ El Excel devolvió un error interno: {respuesta_json.get('message')}")
+                        except:
+                            if "<html" in respuesta.text.lower():
+                                st.error("❌ Google bloqueó la conexión. Faltó poner 'Cualquier persona' en los accesos del script.")
+                            else:
+                                st.error(f"⚠️ Error desconocido del servidor de Google: {respuesta.text}")
+                                
+                    except Exception as e:
+                        st.error(f"⚠️ Error de internet o de conexión: {e}")
                 else:
-                    st.error("❌ Hubo un error al guardar la venta.")
+                    st.error("❌ Hubo un error al guardar la venta localmente.")
             else:
                 st.warning("⚠️ Por favor, ingresa un monto válido.")
 
