@@ -1,915 +1,377 @@
 import streamlit as st
-import pandas as pd
-from datetime import datetime
-
-import database
+import database as db
 import sync
-
-
-# ============================================================
-# CONFIGURACIÓN
-# ============================================================
+import pandas as pd
 
 st.set_page_config(
-    page_title="Seminuevaspy · POS",
-    page_icon="🛍️",
+    page_title="Seminuevaspy · Caja",
+    page_icon="👗",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-
-# ============================================================
-# ESTILOS — UI PREMIUM
-# ============================================================
-
+# ---------------------------------------------------------------------------
+# ESTILOS
+# ---------------------------------------------------------------------------
 st.markdown(
     """
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
 
-    /* ---------- GLOBAL ---------- */
+    :root {
+        --bg: #15111C;
+        --surface: #211A2B;
+        --surface-2: #2A2136;
+        --border: #362A44;
+        --wine: #7A2E3D;
+        --wine-light: #9C4257;
+        --gold: #C9A227;
+        --cream: #F3EAE0;
+        --muted: #A99BB0;
+        --sage: #7C9473;
+        --rust: #B5533C;
+    }
 
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-    html, body, [class*="css"] {
+    html, body, [class*="css"]  {
         font-family: 'Inter', sans-serif;
+        color: var(--cream);
     }
 
     .stApp {
-        background: #f6f7f9;
-        color: #171717;
+        background: linear-gradient(180deg, #15111C 0%, #1A1522 100%);
     }
 
-    .block-container {
-        max-width: 1400px;
-        padding-top: 2rem;
-        padding-bottom: 3rem;
-    }
+    #MainMenu, footer, header { visibility: hidden; }
 
-    /* ---------- OCULTAR ELEMENTOS STREAMLIT ---------- */
-
-    #MainMenu {
-        visibility: hidden;
-    }
-
-    footer {
-        visibility: hidden;
-    }
-
-    header {
-        background: transparent !important;
-    }
-
-    /* ---------- HEADER ---------- */
-
-    .brand-wrapper {
+    /* ---- Encabezado con sello ---- */
+    .marca-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        margin-bottom: 2rem;
+        gap: 22px;
+        padding: 28px 8px 20px 8px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 28px;
     }
-
-    .brand-left {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-    }
-
-    .brand-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
-        background: #171717;
-        color: white;
+    .sello {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 50%;
+        border: 2px solid var(--gold);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 23px;
-        box-shadow: 0 8px 20px rgba(0,0,0,.10);
+        transform: rotate(-8deg);
+        background: radial-gradient(circle at 35% 30%, #2A2136, #1A1522);
+        box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.08);
     }
-
-    .brand-name {
-        font-size: 25px;
-        font-weight: 800;
-        letter-spacing: -0.7px;
-        color: #111111;
-        line-height: 1.1;
-    }
-
-    .brand-subtitle {
-        font-size: 12px;
-        color: #858585;
-        margin-top: 4px;
-        font-weight: 500;
-    }
-
-    .online-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        padding: 8px 13px;
-        border-radius: 999px;
-        background: #ecfdf3;
-        color: #087443;
-        font-size: 12px;
+    .sello span {
+        font-family: 'Fraunces', serif;
+        font-size: 22px;
         font-weight: 700;
-        border: 1px solid #c9f2db;
+        color: var(--gold);
     }
-
-    .online-dot {
-        width: 7px;
-        height: 7px;
-        background: #16a34a;
-        border-radius: 50%;
+    .marca-titulo h1 {
+        font-family: 'Fraunces', serif;
+        font-size: 34px;
+        font-weight: 600;
+        margin: 0;
+        color: var(--cream);
+        letter-spacing: 0.3px;
     }
-
-    /* ---------- CARDS ---------- */
-
-    .section-card {
-        background: white;
-        border: 1px solid #e9eaec;
-        border-radius: 18px;
-        padding: 24px;
-        box-shadow: 0 5px 22px rgba(20,20,20,.035);
-        margin-bottom: 20px;
-    }
-
-    .section-title {
-        font-size: 17px;
-        font-weight: 750;
-        color: #171717;
-        margin-bottom: 4px;
-        letter-spacing: -.25px;
-    }
-
-    .section-description {
-        font-size: 12px;
-        color: #8a8d91;
-        margin-bottom: 20px;
-    }
-
-    /* ---------- INPUTS ---------- */
-
-    div[data-baseweb="input"] > div,
-    div[data-baseweb="select"] > div,
-    div[data-baseweb="textarea"] > div {
-        border-radius: 11px !important;
-        border: 1px solid #dedfe2 !important;
-        background: #ffffff !important;
-        min-height: 44px;
-        transition: all .15s ease;
-    }
-
-    div[data-baseweb="input"] > div:focus-within,
-    div[data-baseweb="select"] > div:focus-within,
-    div[data-baseweb="textarea"] > div:focus-within {
-        border-color: #171717 !important;
-        box-shadow: 0 0 0 2px rgba(23,23,23,.06) !important;
-    }
-
-    label {
-        font-size: 12px !important;
-        font-weight: 650 !important;
-        color: #454545 !important;
-        margin-bottom: 5px !important;
-    }
-
-    /* ---------- BOTONES ---------- */
-
-    .stButton > button {
-        width: 100%;
-        border-radius: 11px;
-        min-height: 44px;
-        border: 1px solid #dedfe2;
-        background: white;
-        color: #171717;
-        font-weight: 700;
+    .marca-titulo p {
+        font-family: 'Inter', sans-serif;
         font-size: 13px;
-        transition: all .15s ease;
-    }
-
-    .stButton > button:hover {
-        border-color: #171717;
-        background: #fafafa;
-        transform: translateY(-1px);
-        box-shadow: 0 5px 15px rgba(0,0,0,.07);
-    }
-
-    .stButton > button[kind="primary"] {
-        background: #171717 !important;
-        color: white !important;
-        border-color: #171717 !important;
-    }
-
-    .stButton > button[kind="primary"]:hover {
-        background: #303030 !important;
-        border-color: #303030 !important;
-        box-shadow: 0 8px 20px rgba(0,0,0,.15);
-    }
-
-    /* ---------- MÉTRICAS ---------- */
-
-    .metric-card {
-        background: white;
-        border: 1px solid #e9eaec;
-        border-radius: 16px;
-        padding: 18px 20px;
-        box-shadow: 0 4px 18px rgba(20,20,20,.025);
-    }
-
-    .metric-label {
-        color: #85878b;
-        font-size: 11px;
-        font-weight: 650;
+        letter-spacing: 2.5px;
         text-transform: uppercase;
-        letter-spacing: .5px;
+        color: var(--muted);
+        margin: 2px 0 0 0;
     }
 
-    .metric-value {
-        color: #171717;
-        font-size: 24px;
-        font-weight: 800;
-        margin-top: 5px;
-        letter-spacing: -.7px;
+    /* ---- Tabs como pills ---- */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 6px;
+        background: var(--surface);
+        padding: 6px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 42px;
+        border-radius: 10px;
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 14px;
+        background: transparent;
+    }
+    .stTabs [aria-selected="true"] {
+        background: var(--wine) !important;
+        color: var(--cream) !important;
     }
 
-    /* ---------- TABLA ---------- */
-
-    .history-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
+    /* ---- Tarjetas ---- */
+    .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+    }
+    .card-title {
+        font-family: 'Fraunces', serif;
+        font-size: 19px;
+        font-weight: 600;
+        color: var(--cream);
+        margin-bottom: 4px;
+    }
+    .card-sub {
+        font-size: 12.5px;
+        color: var(--muted);
+        margin-bottom: 18px;
     }
 
-    .history-count {
-        background: #f1f2f4;
-        color: #676a6e;
-        padding: 6px 10px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 700;
+    /* ---- Métricas ---- */
+    .metrica {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--gold);
+        border-radius: 12px;
+        padding: 16px 18px;
+    }
+    .metrica .num {
+        font-family: 'Fraunces', serif;
+        font-size: 26px;
+        font-weight: 600;
+        color: var(--cream);
+    }
+    .metrica .label {
+        font-size: 11.5px;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: var(--muted);
     }
 
+    /* ---- Inputs ---- */
+    .stTextInput input, .stNumberInput input, .stSelectbox div[data-baseweb="select"] > div {
+        background: var(--surface-2) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 10px !important;
+        color: var(--cream) !important;
+    }
+    label, .stMarkdown p { color: var(--muted) !important; }
+
+    /* ---- Botones ---- */
+    .stButton > button {
+        background: var(--wine);
+        color: var(--cream);
+        border: none;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-weight: 600;
+        font-size: 14.5px;
+        transition: background 0.15s ease;
+    }
+    .stButton > button:hover {
+        background: var(--wine-light);
+        color: var(--cream);
+    }
+    .boton-sync button {
+        background: var(--gold) !important;
+        color: #1A1522 !important;
+        width: 100%;
+    }
+    .boton-sync button:hover {
+        background: #DDB84A !important;
+    }
+    .boton-peligro button {
+        background: transparent !important;
+        border: 1px solid var(--rust) !important;
+        color: var(--rust) !important;
+    }
+    .boton-peligro button:hover {
+        background: var(--rust) !important;
+        color: var(--cream) !important;
+    }
+
+    /* ---- Dataframe ---- */
     [data-testid="stDataFrame"] {
-        border: 1px solid #e7e8ea;
-        border-radius: 13px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
         overflow: hidden;
     }
 
-    /* ---------- BADGES ---------- */
-
-    .status-active {
-        display: inline-block;
-        padding: 4px 9px;
-        border-radius: 999px;
-        background: #ecfdf3;
-        color: #087443;
-        font-size: 11px;
-        font-weight: 700;
-    }
-
-    .status-cancelled {
-        display: inline-block;
-        padding: 4px 9px;
-        border-radius: 999px;
-        background: #fff1f2;
-        color: #be123c;
-        font-size: 11px;
-        font-weight: 700;
-    }
-
-    .sync-ok {
-        display: inline-block;
-        padding: 4px 9px;
-        border-radius: 999px;
-        background: #eff6ff;
-        color: #1d4ed8;
-        font-size: 11px;
-        font-weight: 700;
-    }
-
-    .sync-pending {
-        display: inline-block;
-        padding: 4px 9px;
-        border-radius: 999px;
-        background: #fff7ed;
-        color: #c2410c;
-        font-size: 11px;
-        font-weight: 700;
-    }
-
-    /* ---------- EMERGENCY SYNC ---------- */
-
-    .sync-banner {
-        background: #171717;
-        border-radius: 17px;
-        padding: 19px 22px;
-        color: white;
-        margin-top: 5px;
-        margin-bottom: 20px;
-    }
-
-    .sync-banner-title {
-        font-weight: 750;
-        font-size: 14px;
-    }
-
-    .sync-banner-text {
-        color: #bcbcbc;
-        font-size: 11px;
-        margin-top: 3px;
-    }
-
-    /* ---------- DIVIDER ---------- */
-
-    hr {
-        border: none !important;
-        border-top: 1px solid #ededed !important;
-        margin: 26px 0 !important;
-    }
-
-    /* ---------- ALERTAS ---------- */
-
-    div[data-testid="stAlert"] {
-        border-radius: 12px;
-        border: 1px solid #e6e7e9;
-    }
-
-    /* ---------- RESPONSIVE ---------- */
-
-    @media (max-width: 768px) {
-        .block-container {
-            padding: 1rem;
-        }
-
-        .brand-name {
-            font-size: 21px;
-        }
-
-        .metric-value {
-            font-size: 20px;
-        }
-    }
-
+    hr { border-color: var(--border); }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
+db.inicializar_db()
 
-# ============================================================
-# FUNCIONES AUXILIARES
-# ============================================================
-
-def formatear_gs(valor):
-    try:
-        return f"Gs. {int(valor):,}".replace(",", ".")
-    except Exception:
-        return "Gs. 0"
-
-
-def cargar_ventas():
-    try:
-        ventas = database.obtener_todas_las_ventas()
-
-        if not ventas:
-            return pd.DataFrame()
-
-        # Compatible con listas de diccionarios
-        if isinstance(ventas, list) and isinstance(ventas[0], dict):
-            return pd.DataFrame(ventas)
-
-        # Compatible con listas de tuplas
-        columnas = [
-            "monto_gs",
-            "metodo_pago",
-            "descripcion_prenda",
-            "nombre_clienta",
-            "vendedora",
-            "id",
-            "fecha_hora",
-            "estado",
-            "sync_status",
-        ]
-
-        try:
-            return pd.DataFrame(ventas, columns=columnas)
-        except Exception:
-            return pd.DataFrame(ventas)
-
-    except Exception as e:
-        st.error(f"No se pudo cargar el historial: {e}")
-        return pd.DataFrame()
-
-
-def normalizar_columnas(df):
-    if df.empty:
-        return df
-
-    df = df.copy()
-
-    # En caso de que la base devuelva nombres ligeramente distintos
-    aliases = {
-        "monto": "monto_gs",
-        "monto": "monto_gs",
-        "descripcion": "descripcion_prenda",
-        "cliente": "nombre_clienta",
-        "vendedora": "vendedora",
-        "fecha": "fecha_hora",
-        "estado": "estado",
-        "sync": "sync_status",
-    }
-
-    for origen, destino in aliases.items():
-        if origen in df.columns and destino not in df.columns:
-            df.rename(columns={origen: destino}, inplace=True)
-
-    return df
-
-
-# ============================================================
-# HEADER
-# ============================================================
-
+# ---------------------------------------------------------------------------
+# ENCABEZADO
+# ---------------------------------------------------------------------------
 st.markdown(
     """
-    <div class="brand-wrapper">
-        <div class="brand-left">
-            <div class="brand-icon">🛍️</div>
-            <div>
-                <div class="brand-name">seminuevaspy</div>
-                <div class="brand-subtitle">Sistema de ventas · Punto de venta</div>
-            </div>
-        </div>
-
-        <div class="online-badge">
-            <span class="online-dot"></span>
-            Sistema operativo
+    <div class="marca-header">
+        <div class="sello"><span>SP</span></div>
+        <div class="marca-titulo">
+            <h1>Seminuevaspy</h1>
+            <p>Sistema de caja &amp; ventas</p>
         </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
+tab1, tab2, tab3 = st.tabs(["Nueva venta", "Historial", "Sincronización"])
 
-# ============================================================
-# CARGAR DATOS
-# ============================================================
+# ---------------------------------------------------------------------------
+# TAB 1 · NUEVA VENTA
+# ---------------------------------------------------------------------------
+with tab1:
+    col_form, col_ayuda = st.columns([2, 1])
 
-df = normalizar_columnas(cargar_ventas())
+    with col_form:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">Registrar venta</div>', unsafe_allow_html=True)
+        st.markdown('<div class="card-sub">Completá los datos y guardá — se sincroniza sola con Sheets.</div>', unsafe_allow_html=True)
 
+        with st.form("form_nueva_venta", clear_on_submit=True):
+            descripcion = st.text_input("Descripción de la prenda", placeholder="Ej: Campera de cuero negra")
 
-# ============================================================
-# MÉTRICAS
-# ============================================================
-
-ventas_activas = pd.DataFrame()
-
-if not df.empty:
-    if "estado" in df.columns:
-        ventas_activas = df[df["estado"].astype(str).str.lower() == "activa"].copy()
-    else:
-        ventas_activas = df.copy()
-
-total_facturado = 0
-
-if not ventas_activas.empty and "monto_gs" in ventas_activas.columns:
-    total_facturado = pd.to_numeric(
-        ventas_activas["monto_gs"],
-        errors="coerce"
-    ).fillna(0).sum()
-
-cantidad_ventas = len(ventas_activas)
-
-ticket_promedio = (
-    total_facturado / cantidad_ventas
-    if cantidad_ventas > 0
-    else 0
-)
-
-pendientes = 0
-
-if not df.empty and "sync_status" in df.columns:
-    pendientes = (
-        pd.to_numeric(df["sync_status"], errors="coerce")
-        .fillna(0)
-        .eq(0)
-        .sum()
-    )
-
-
-m1, m2, m3, m4 = st.columns(4)
-
-with m1:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">Facturación activa</div>
-            <div class="metric-value">{formatear_gs(total_facturado)}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with m2:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">Ventas</div>
-            <div class="metric-value">{cantidad_ventas}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with m3:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">Ticket promedio</div>
-            <div class="metric-value">{formatear_gs(ticket_promedio)}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with m4:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">Pendientes de nube</div>
-            <div class="metric-value">{pendientes}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-
-# ============================================================
-# NUEVA VENTA
-# ============================================================
-
-st.markdown(
-    """
-    <div class="section-card">
-        <div class="section-title">Nueva venta</div>
-        <div class="section-description">
-            Registrá una nueva operación. Los datos se guardarán localmente
-            y luego se sincronizarán con la nube.
-        </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-with st.form("form_nueva_venta", clear_on_submit=True):
-
-    col1, col2 = st.columns([1.6, 1])
-
-    with col1:
-        descripcion = st.text_input(
-            "Descripción de la prenda",
-            placeholder="Ej.: Vestido negro Zara",
-        )
-
-    with col2:
-        monto = st.number_input(
-            "Monto en Gs.",
-            min_value=0,
-            step=1000,
-            format="%d",
-        )
-
-    col3, col4, col5 = st.columns([1, 1, 1])
-
-    with col3:
-        metodo_pago = st.selectbox(
-            "Método de pago",
-            ["Efectivo", "Transferencia", "QR"],
-        )
-
-    with col4:
-        nombre_clienta = st.text_input(
-            "Nombre de clienta",
-            placeholder="Opcional",
-        )
-
-    with col5:
-        vendedora = st.selectbox(
-            "Vendedora",
-            ["Romina", "Otra"],
-        )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    guardar = st.form_submit_button(
-        "✓  Registrar venta",
-        type="primary",
-        use_container_width=True,
-    )
-
-    if guardar:
-
-        if not descripcion.strip():
-            st.error("Ingresá la descripción de la prenda.")
-        elif monto <= 0:
-            st.error("El monto debe ser mayor a 0.")
-        else:
-
-            clienta_final = nombre_clienta.strip() or "Cliente casual"
-
-            try:
-                # Mantener intacta la lógica del backend.
-                database.agregar_venta(
-                    monto_gs=int(monto),
-                    metodo_pago=metodo_pago,
-                    descripcion_prenda=descripcion.strip(),
-                    nombre_clienta=clienta_final,
-                    vendedora=vendedora,
+            c1, c2 = st.columns(2)
+            with c1:
+                monto = st.number_input(
+                    "Monto (₲)", min_value=0, step=10000, format="%d",
+                    value=None, placeholder="Ej: 150000",
                 )
+            with c2:
+                metodo = st.selectbox("Método de pago", ["Efectivo", "Transferencia", "QR"])
 
-                try:
-                    sync.sincronizar_pendientes()
-                except Exception:
-                    # La venta ya quedó guardada localmente.
-                    # Si no hay internet, seguirá pendiente.
-                    pass
+            c3, c4 = st.columns(2)
+            with c3:
+                clienta = st.text_input("Nombre de la clienta", placeholder="Opcional")
+            with c4:
+                vendedora = st.selectbox("Vendedora", ["Romina", "Otra"])
 
-                st.success(
-                    "Venta registrada correctamente."
-                )
+            enviar = st.form_submit_button("Guardar venta", use_container_width=True)
 
-                st.rerun()
-
-            except TypeError:
-                # Compatibilidad con funciones que reciben argumentos
-                # posicionales en lugar de argumentos nombrados.
-                try:
-                    database.agregar_venta(
-                        int(monto),
-                        metodo_pago,
-                        descripcion.strip(),
-                        clienta_final,
-                        vendedora,
+            if enviar:
+                if monto is not None and monto > 0:
+                    nombre_final = clienta.strip() if clienta and clienta.strip() else "Cliente casual"
+                    db.agregar_venta(
+                        monto_gs=monto,
+                        metodo_pago=metodo,
+                        descripcion_prenda=descripcion,
+                        nombre_clienta=nombre_final,
+                        vendedora=vendedora,
                     )
+                    sync.sincronizar_pendientes()
+                    st.success(f"Venta de ₲ {monto:,.0f} guardada y sincronizada.")
+                else:
+                    st.warning("Ingresá un monto válido antes de guardar.")
 
-                    try:
-                        sync.sincronizar_pendientes()
-                    except Exception:
-                        pass
+        st.markdown('</div>', unsafe_allow_html=True)
 
-                    st.success("Venta registrada correctamente.")
-                    st.rerun()
+    with col_ayuda:
+        df_resumen = db.obtener_todas_las_ventas()
+        total_ventas = len(df_resumen) if not df_resumen.empty else 0
+        pendientes = int((df_resumen["sync_status"] == 0).sum()) if not df_resumen.empty else 0
+        anuladas = int((df_resumen["estado"] == "anulada").sum()) if not df_resumen.empty else 0
 
-                except Exception as e:
-                    st.error(f"No se pudo registrar la venta: {e}")
-
-            except Exception as e:
-                st.error(f"No se pudo registrar la venta: {e}")
-
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ============================================================
-# SINCRONIZACIÓN
-# ============================================================
-
-st.markdown(
-    """
-    <div class="sync-banner">
-        <div class="sync-banner-title">☁️ Sincronización con la nube</div>
-        <div class="sync-banner-text">
-            Si hubo un corte de internet, podés intentar subir nuevamente
-            todas las ventas pendientes.
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-sync_col1, sync_col2 = st.columns([3, 1])
-
-with sync_col1:
-    st.caption(
-        f"{pendientes} venta(s) pendiente(s) de sincronización."
-        if pendientes != 1
-        else "1 venta pendiente de sincronización."
-    )
-
-with sync_col2:
-    if st.button(
-        "☁️ Sincronizar ahora",
-        type="primary",
-        use_container_width=True,
-    ):
-        try:
-            sync.sincronizar_pendientes()
-            st.success("Sincronización ejecutada correctamente.")
-            st.rerun()
-        except Exception as e:
-            st.error(f"No se pudo sincronizar: {e}")
-
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-
-# ============================================================
-# HISTORIAL
-# ============================================================
-
-st.markdown(
-    """
-    <div class="section-card">
-        <div class="history-header">
-            <div>
-                <div class="section-title">Historial de ventas</div>
-                <div class="section-description" style="margin-bottom:0;">
-                    Todas las operaciones registradas en el sistema.
-                </div>
+        st.markdown(
+            f"""
+            <div class="metrica" style="margin-bottom:14px;">
+                <div class="num">{total_ventas}</div>
+                <div class="label">Ventas totales</div>
             </div>
-        """,
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    f'<div class="history-count">{len(df)} registros</div></div>',
-    unsafe_allow_html=True,
-)
-
-if df.empty:
-
-    st.info("Todavía no hay ventas registradas.")
-
-else:
-
-    tabla = df.copy()
-
-    # Ordenar por fecha si existe
-    if "fecha_hora" in tabla.columns:
-        try:
-            tabla["_fecha_sort"] = pd.to_datetime(
-                tabla["fecha_hora"],
-                errors="coerce"
-            )
-            tabla = tabla.sort_values(
-                "_fecha_sort",
-                ascending=False
-            )
-            tabla.drop(columns=["_fecha_sort"], inplace=True)
-        except Exception:
-            pass
-
-    # Estado amigable
-    if "estado" in tabla.columns:
-        tabla["estado"] = tabla["estado"].apply(
-            lambda x:
-            "🟢 Activa"
-            if str(x).lower() == "activa"
-            else "🔴 Anulada"
+            <div class="metrica" style="margin-bottom:14px; border-left-color: var(--rust);">
+                <div class="num">{pendientes}</div>
+                <div class="label">Pendientes de subir</div>
+            </div>
+            <div class="metrica" style="border-left-color: var(--sage);">
+                <div class="num">{anuladas}</div>
+                <div class="label">Anuladas</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
-    # Sincronización amigable
-    if "sync_status" in tabla.columns:
-        tabla["sync_status"] = tabla["sync_status"].apply(
-            lambda x:
-            "☁️ Sí"
-            if str(x) == "1"
-            else "⏳ Pendiente"
-        )
+# ---------------------------------------------------------------------------
+# TAB 2 · HISTORIAL
+# ---------------------------------------------------------------------------
+with tab2:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="card-title">Historial de ventas</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card-sub">Estado y sincronización de cada movimiento.</div>', unsafe_allow_html=True)
 
-    # Formato de monto
-    if "monto_gs" in tabla.columns:
-        tabla["monto_gs"] = pd.to_numeric(
-            tabla["monto_gs"],
-            errors="coerce"
-        ).fillna(0).apply(formatear_gs)
+    df_hist = db.obtener_todas_las_ventas()
 
-    # Renombrar para mostrar nombres amigables
-    nombres_columnas = {
-        "fecha_hora": "Fecha y hora",
-        "descripcion_prenda": "Prenda",
-        "monto_gs": "Monto",
-        "metodo_pago": "Método",
-        "nombre_clienta": "Clienta",
-        "vendedora": "Vendedora",
-        "estado": "Estado",
-        "sync_status": "Nube",
-        "id": "ID",
-    }
+    if not df_hist.empty:
+        df_vista = df_hist.copy()
+        df_vista["Estado"] = df_vista["estado"].map(
+            {"activa": "🟢 Activa", "anulada": "🔴 Anulada"}
+        ).fillna(df_vista["estado"])
+        df_vista["Nube"] = df_vista["sync_status"].map(
+            {1: "☁️ Sincronizada", 0: "⏳ Pendiente"}
+        ).fillna("⏳ Pendiente")
+        df_vista["Monto (₲)"] = df_vista["monto_gs"].map(lambda x: f"₲ {x:,.0f}")
 
-    tabla.rename(
-        columns={
-            k: v
-            for k, v in nombres_columnas.items()
-            if k in tabla.columns
-        },
-        inplace=True,
-    )
+        columnas = {
+            "id": "ID",
+            "fecha_hora": "Fecha",
+            "descripcion_prenda": "Prenda",
+            "Monto (₲)": "Monto (₲)",
+            "metodo_pago": "Método",
+            "nombre_clienta": "Clienta",
+            "vendedora": "Vendedora",
+            "Estado": "Estado",
+            "Nube": "Nube",
+        }
+        df_final = df_vista.rename(columns=columnas)[list(columnas.values())]
 
-    # Orden visual
-    orden = [
-        "Fecha y hora",
-        "Prenda",
-        "Monto",
-        "Método",
-        "Clienta",
-        "Vendedora",
-        "Estado",
-        "Nube",
-        "ID",
-    ]
+        st.dataframe(df_final, use_container_width=True, hide_index=True)
 
-    columnas_finales = [
-        c for c in orden
-        if c in tabla.columns
-    ]
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('<div class="card-title" style="font-size:16px;">Anular una venta</div>', unsafe_allow_html=True)
 
-    tabla = tabla[columnas_finales]
-
-    st.dataframe(
-        tabla,
-        use_container_width=True,
-        hide_index=True,
-        height=430,
-    )
-
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ============================================================
-# ANULACIÓN
-# ============================================================
-
-st.markdown(
-    """
-    <div class="section-card">
-        <div class="section-title">Anular una venta</div>
-        <div class="section-description">
-            Utilizá el ID de la venta para anularla. La operación no se
-            elimina del historial.
-        </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-col_id, col_button = st.columns([3, 1])
-
-with col_id:
-    id_venta = st.text_input(
-        "ID de venta",
-        placeholder="Pegá aquí el UUID de la venta",
-        label_visibility="collapsed",
-    )
-
-with col_button:
-    anular = st.button(
-        "Anular venta",
-        use_container_width=True,
-    )
-
-if anular:
-
-    id_limpio = id_venta.strip()
-
-    if not id_limpio:
-        st.warning("Ingresá el ID de la venta.")
+        col_id, col_btn = st.columns([3, 1])
+        with col_id:
+            id_anular = st.text_input("ID de la venta (UUID)", placeholder="Pegá el ID acá", label_visibility="collapsed")
+        with col_btn:
+            st.markdown('<div class="boton-peligro">', unsafe_allow_html=True)
+            if st.button("Anular venta", use_container_width=True):
+                if id_anular.strip():
+                    if db.anular_venta(id_anular.strip()):
+                        st.success("Venta anulada.")
+                        st.rerun()
+                    else:
+                        st.error("No se encontró esa venta.")
+                else:
+                    st.warning("Pegá un ID válido.")
+            st.markdown('</div>', unsafe_allow_html=True)
     else:
-        try:
-            resultado = database.anular_venta(id_limpio)
+        st.info("Todavía no hay ventas registradas.")
 
-            if resultado is False:
-                st.warning(
-                    "No se encontró la venta o no pudo ser anulada."
-                )
-            else:
-                st.success("Venta anulada correctamente.")
-                st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-        except Exception as e:
-            st.error(f"No se pudo anular la venta: {e}")
+# ---------------------------------------------------------------------------
+# TAB 3 · SINCRONIZACIÓN
+# ---------------------------------------------------------------------------
+with tab3:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="card-title">Sincronización manual</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="card-sub">Si se cortó internet, las ventas quedan pendientes localmente. '
+        'Usá este botón cuando vuelva la conexión para subir todo lo pendiente a Sheets.</div>',
+        unsafe_allow_html=True,
+    )
 
+    st.markdown('<div class="boton-sync">', unsafe_allow_html=True)
+    if st.button("🔄 Sincronizar ahora", use_container_width=True):
+        with st.spinner("Subiendo ventas pendientes a Google Sheets..."):
+            sync.sincronizar_pendientes()
+        st.success("Sincronización completada.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ============================================================
-# FOOTER
-# ============================================================
-
-st.markdown(
-    """
-    <div style="
-        text-align:center;
-        color:#a0a2a5;
-        font-size:11px;
-        padding-top:18px;
-    ">
-        seminuevaspy · Sistema POS
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+    st.markdown('</div>', unsafe_allow_html=True)
