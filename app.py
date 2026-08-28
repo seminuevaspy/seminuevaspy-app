@@ -205,7 +205,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-db.inicializar_db()
+db.init_db()
 
 # ---------------------------------------------------------------------------
 # ENCABEZADO
@@ -266,15 +266,16 @@ with tab1:
                         nombre_clienta=nombre_final,
                         vendedora=vendedora,
                     )
-                    sync.sincronizar_pendientes()
-                    st.success(f"Venta de ₲ {monto:,.0f} guardada y sincronizada.")
+                    mensaje_sync = sync.sincronizar_pendientes()
+                    st.success(f"Venta de ₲ {monto:,.0f} guardada.")
+                    st.caption(mensaje_sync)
                 else:
                     st.warning("Ingresá un monto válido antes de guardar.")
 
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col_ayuda:
-        df_resumen = db.obtener_todas_las_ventas()
+        df_resumen = pd.DataFrame(db.obtener_todas_las_ventas())
         total_ventas = len(df_resumen) if not df_resumen.empty else 0
         pendientes = int((df_resumen["sync_status"] == 0).sum()) if not df_resumen.empty else 0
         anuladas = int((df_resumen["estado"] == "anulada").sum()) if not df_resumen.empty else 0
@@ -305,7 +306,7 @@ with tab2:
     st.markdown('<div class="card-title">Historial de ventas</div>', unsafe_allow_html=True)
     st.markdown('<div class="card-sub">Estado y sincronización de cada movimiento.</div>', unsafe_allow_html=True)
 
-    df_hist = db.obtener_todas_las_ventas()
+    df_hist = pd.DataFrame(db.obtener_todas_las_ventas())
 
     if not df_hist.empty:
         df_vista = df_hist.copy()
@@ -342,7 +343,10 @@ with tab2:
             st.markdown('<div class="boton-peligro">', unsafe_allow_html=True)
             if st.button("Anular venta", use_container_width=True):
                 if id_anular.strip():
-                    if db.anular_venta(id_anular.strip()):
+                    id_limpio = id_anular.strip()
+                    existe = (df_hist["id"] == id_limpio).any()
+                    if existe:
+                        db.anular_venta(id_limpio)
                         st.success("Venta anulada.")
                         st.rerun()
                     else:
@@ -370,8 +374,8 @@ with tab3:
     st.markdown('<div class="boton-sync">', unsafe_allow_html=True)
     if st.button("🔄 Sincronizar ahora", use_container_width=True):
         with st.spinner("Subiendo ventas pendientes a Google Sheets..."):
-            sync.sincronizar_pendientes()
-        st.success("Sincronización completada.")
+            mensaje_sync = sync.sincronizar_pendientes()
+        st.success(mensaje_sync)
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
