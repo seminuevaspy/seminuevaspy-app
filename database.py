@@ -1,73 +1,82 @@
 import sqlite3
+import uuid
 from datetime import datetime
-import pandas as pd
 
-def crear_conexion():
-    try:
-        conn = sqlite3.connect('seminuevaspy.db')
-        return conn
-    except sqlite3.Error as e:
-        print(f"Error al conectar: {e}")
-        return None
+DB_NAME = "seminuevaspy.db"
 
-def inicializar_db():
-    conn = crear_conexion()
-    if conn is not None:
-        try:
-            cursor = conn.cursor()
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS ventas (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    fecha_hora DATETIME NOT NULL,
-                    monto_gs INTEGER NOT NULL,
-                    metodo_pago TEXT NOT NULL,
-                    nombre_clienta TEXT,
-                    vendedora TEXT NOT NULL,
-                    descripcion_prenda TEXT
-                )
-            ''')
-            conn.commit()
-        except sqlite3.Error as e:
-            print(f"Error al crear la tabla: {e}")
-        finally:
-            conn.close()
+def get_connection():
+    return sqlite3.connect(DB_NAME)
 
-def registrar_venta(monto, metodo_pago, nombre_clienta, vendedora, descripcion_prenda):
-    conn = crear_conexion()
-    if conn is not None:
-        try:
-            cursor = conn.cursor()
-            fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            cursor.execute('''
-                INSERT INTO ventas (fecha_hora, monto_gs, metodo_pago, nombre_clienta, vendedora, descripcion_prenda)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (fecha_actual, monto, metodo_pago, nombre_clienta, vendedora, descripcion_prenda))
-            conn.commit()
-            return True
-        except sqlite3.Error as e:
-            print(f"Error al registrar venta: {e}")
-            return False
-        finally:
-            conn.close()
+def init_db():
+    conn = get_connection()
+    cursor = conn.cursor()
+    # Tabla adaptada a tus columnas exactas
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ventas (
+            id TEXT PRIMARY KEY,
+            fecha_hora TEXT,
+            monto_gs REAL,
+            metodo_pago TEXT,
+            descripcion_prenda TEXT,
+            nombre_clienta TEXT,
+            vendedora TEXT,
+            estado TEXT,      
+            sync_status INTEGER 
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
-def obtener_datos_ventas():
-    conn = crear_conexion()
-    if conn is not None:
-        df = pd.read_sql_query("SELECT * FROM ventas ORDER BY id DESC", conn)
-        conn.close()
-        return df
-    return pd.DataFrame()
+def agregar_venta(monto_gs, metodo_pago, descripcion_prenda, nombre_clienta, vendedora):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    venta_id = str(uuid.uuid4()) 
+    fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    estado = "activa"
+    sync_status = 0 
+    
+    cursor.execute('''
+        INSERT INTO ventas (id, fecha_hora, monto_gs, metodo_pago, descripcion_prenda, nombre_clienta, vendedora, estado, sync_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (venta_id, fecha_actual, monto_gs, metodo_pago, descripcion_prenda, nombre_clienta, vendedora, estado, sync_status))
+    
+    conn.commit()
+    conn.close()
+    return venta_id
 
-def eliminar_venta(id_venta):
-    conn = crear_conexion()
-    if conn is not None:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM ventas WHERE id = ?", (id_venta,))
-            conn.commit()
-            return True
-        except sqlite3.Error as e:
-            print(f"Error al eliminar: {e}")
-            return False
-        finally:
-            conn.close()
+def anular_venta(venta_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE ventas SET estado = 'anulada', sync_status = 0 WHERE id = ?", (venta_id,))
+    conn.commit()
+    conn.close()
+
+def obtener_ventas_pendientes_sync():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM ventas WHERE sync_status = 0")
+    columnas = [column[0] for column in cursor.description]
+    resultados = [dict(zip(columnas, row)) for row in cursor.fetchall()]
+    conn.close()
+    return resultados
+
+def marcar_como_sincronizada(venta_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE ventas SET sync_status = 1 WHERE id = ?", (venta_id,))
+    conn.commit()
+    conn.close()
+
+def obtener_todas_las_ventas():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM ventas ORDER BY fecha_hora DESC")
+    columnas = [column[0] for column in cursor.description]
+    resultados = [dict(zip(columnas, row)) for row in cursor.fetchall()]
+    conn.close()
+    return resultados
+
+if __name__ == "__main__":
+    init_db()
+    print("Base de datos SQLite inicializada con tus columnas personalizadas.")

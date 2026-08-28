@@ -1,124 +1,95 @@
 import streamlit as st
-import database as db
-import requests
-from datetime import datetime
+import pandas as pd
+import database
+import sync
 
-st.set_page_config(page_title="Seminuevaspy - Sistema", page_icon="👗", layout="wide")
+# Configuración inicial de la página
+st.set_page_config(page_title="Seminuevaspy - Caja", page_icon="👗", layout="wide")
 
-st.markdown("<h1 style='text-align: center;'>👗 Sistema Seminuevaspy</h1>", unsafe_allow_html=True)
+# Asegurarnos de que la base de datos existe al abrir la app
+database.init_db()
+
+st.title("👗 Sistema de Ventas - Seminuevaspy")
 st.markdown("---")
 
-db.inicializar_db()
+# Dividimos la pantalla en dos columnas (Izquierda: Formulario | Derecha: Historial)
+col1, col2 = st.columns([1, 2])
 
-tab1, tab2, tab3 = st.tabs(["📝 Registrar Venta", "📊 Tablero Financiero", "⚙️ Administrar"])
-
-# --- PESTAÑA 1: FORMULARIO ---
-with tab1:
-    st.subheader("Nueva Venta")
-    with st.form("formulario_ventas", clear_on_submit=True):
-        monto = st.number_input("Monto de la venta (₲)", min_value=0, step=10000, format="%d", value=None, placeholder="Ej: 150000")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            metodo = st.selectbox("Método de pago", ["Efectivo", "Transferencia", "QR"])
-        with col2:
-            vendedora = st.selectbox("Vendedora", ["Romina", "Pamela"]) 
-            
-        descripcion = st.text_input("Descripción de la prenda (Opcional)", placeholder="Ej: Blusa negra Zara")
-        clienta = st.text_input("Nombre de la clienta (Opcional)")
-        
-        submit = st.form_submit_button("Guardar Venta", use_container_width=True)
-        
-        if submit:
-            if monto is not None and monto > 0:
-                exito = db.registrar_venta(monto, metodo, clienta, vendedora, descripcion)
-                
-                if exito:
-                    # --- MODO DETECTIVE ACTIVADO ---
-                    try:
-                        url_google = "https://script.google.com/macros/s/AKfycbyQt3JUla-NxIEsTj8U0rKohwx6A6FLh9DwoKSgnYRZegdx13UylKoQC9r-SDq0DAXJ0Q/exec"
-                        fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                        
-                        datos_venta = {
-                            "fecha_hora": fecha_actual,
-                            "monto_gs": monto,
-                            "metodo_pago": metodo,
-                            "descripcion_prenda": descripcion if descripcion else "Sin descripción",
-                            "nombre_clienta": clienta if clienta else "Cliente casual",
-                            "vendedora": vendedora
-                        }
-                        
-                        respuesta = requests.post(url_google, json=datos_venta)
-                        
-                        try:
-                            respuesta_json = respuesta.json()
-                            if respuesta_json.get("status") == "exito":
-                                st.success(f"✅ Venta de ₲ {monto:,} guardada localmente y en EXCEL.")
-                            else:
-                                st.error(f"⚠️ El Excel devolvió un error interno: {respuesta_json.get('message')}")
-                        except:
-                            if "<html" in respuesta.text.lower():
-                                st.error("❌ Google bloqueó la conexión. Faltó poner 'Cualquier persona' en los accesos del script.")
-                            else:
-                                st.error(f"⚠️ Error desconocido del servidor de Google: {respuesta.text}")
-                                
-                    except Exception as e:
-                        st.error(f"⚠️ Error de internet o de conexión: {e}")
-                else:
-                    st.error("❌ Hubo un error al guardar la venta localmente.")
-            else:
-                st.warning("⚠️ Por favor, ingresa un monto válido.")
-
-# --- PESTAÑA 2: TABLERO ULTRA PRO ---
-with tab2:
-    st.subheader("Resumen del Mes")
-    df_ventas = db.obtener_datos_ventas()
-
-    if not df_ventas.empty:
-        total_bruto = df_ventas['monto_gs'].sum()
-        costo_ropa = total_bruto * 0.50 
-        comision_romina = total_bruto * 0.07
-        comision_pamela = total_bruto * 0.07
-        comision_damian = total_bruto * 0.03
-        ganancia_duena = costo_ropa - comision_romina - comision_pamela - comision_damian 
-
-        c1, c2, c3 = st.columns(3)
-        c1.metric("💰 Venta Bruta (100%)", f"₲ {total_bruto:,.0f}")
-        c2.warning(f"📦 Capital Reposición Ropa (50%)\n\n₲ {costo_ropa:,.0f}")
-        c3.success(f"👑 Ganancia Neta Dueña (33%)\n\n₲ {ganancia_duena:,.0f}")
-        
-        st.markdown("---")
-        st.markdown("### 🤝 Reparto de Comisiones (17%)")
-        
-        c4, c5, c6 = st.columns(3)
-        c4.markdown(f"""<div style="background-color: rgba(155, 89, 182, 0.15); border: 1px solid rgba(155, 89, 182, 0.5); padding: 15px; border-radius: 8px;"><p style="margin:0px; font-size: 14px; font-weight: 500;">Comisión Romina (7%)</p><h3 style="margin:0px; margin-top:10px; color: #D7BDE2;">₲ {comision_romina:,.0f}</h3></div>""", unsafe_allow_html=True)
-        c5.markdown(f"""<div style="background-color: rgba(232, 67, 147, 0.15); border: 1px solid rgba(232, 67, 147, 0.5); padding: 15px; border-radius: 8px;"><p style="margin:0px; font-size: 14px; font-weight: 500;">Comisión Pamela (7%)</p><h3 style="margin:0px; margin-top:10px; color: #FF9EE2;">₲ {comision_pamela:,.0f}</h3></div>""", unsafe_allow_html=True)
-        c6.markdown(f"""<div style="background-color: rgba(52, 152, 219, 0.15); border: 1px solid rgba(52, 152, 219, 0.5); padding: 15px; border-radius: 8px;"><p style="margin:0px; font-size: 14px; font-weight: 500;">Comisión Damián (3%)</p><h3 style="margin:0px; margin-top:10px; color: #AED6F1;">₲ {comision_damian:,.0f}</h3></div>""", unsafe_allow_html=True)
-
-    else:
-        st.info("Aún no hay ventas registradas.")
-
-# --- PESTAÑA 3: ADMINISTRACIÓN ---
-with tab3:
-    st.subheader("Historial y Correcciones")
-    df_ventas_admin = db.obtener_datos_ventas()
+with col1:
+    st.subheader("📝 Registrar Nueva Venta")
     
-    if not df_ventas_admin.empty:
-        columnas_ordenadas = ['id', 'fecha_hora', 'monto_gs', 'metodo_pago', 'descripcion_prenda', 'nombre_clienta', 'vendedora']
-        df_mostrar = df_ventas_admin[columnas_ordenadas]
+    # Creamos el formulario de carga
+    with st.form("formulario_ventas", clear_on_submit=True):
+        descripcion_prenda = st.text_input("Descripción de la prenda *", placeholder="Ej: Vestido rojo fiesta")
+        monto_gs = st.number_input("Monto en Guaraníes (Gs) *", min_value=0, step=5000)
+        metodo_pago = st.selectbox("Método de Pago *", ["Efectivo", "Transferencia", "QR"])
+        nombre_clienta = st.text_input("Nombre de la Clienta (Opcional)", placeholder="Dejar en blanco para 'Cliente casual'")
+        vendedora = st.selectbox("Vendedora *", ["Romina", "Otra"])
         
+        btn_guardar = st.form_submit_button("💰 Registrar Venta", use_container_width=True)
+        
+        if btn_guardar:
+            if descripcion_prenda and monto_gs > 0:
+                # Si el nombre está vacío, asigna "Cliente casual" por defecto
+                cliente_final = nombre_clienta if nombre_clienta else "Cliente casual"
+                
+                # 1. Guardar en disco duro local (Súper rápido y seguro)
+                database.agregar_venta(monto_gs, metodo_pago, descripcion_prenda, cliente_final, vendedora)
+                st.success("✅ Venta guardada localmente.")
+                
+                # 2. Intentar subir a Google Sheets en segundo plano
+                resultado_sync = sync.sincronizar_pendientes()
+                st.info(resultado_sync)
+                
+                # Recargar la página para actualizar la tabla
+                st.rerun()
+            else:
+                st.error("⚠️ La descripción y el monto son obligatorios.")
+
+    st.markdown("---")
+    st.subheader("🔄 Sincronización Manual")
+    st.write("Usa este botón si se cortó el internet y querés forzar la subida de datos a la planilla.")
+    if st.button("Subir datos pendientes a la nube", use_container_width=True):
+        with st.spinner("Sincronizando con Google Sheets..."):
+            resultado = sync.sincronizar_pendientes()
+            st.success(resultado)
+            st.rerun()
+
+with col2:
+    st.subheader("📊 Historial Reciente")
+    
+    # Traemos todas las ventas de la base de datos local
+    ventas = database.obtener_todas_las_ventas()
+    
+    if ventas:
+        # Convertimos los datos en una tabla de Pandas para que se vea lindo en Streamlit
+        df = pd.DataFrame(ventas)
+        
+        # Le damos un formato más amigable a las columnas para leerlo mejor
+        df_mostrar = df[['fecha_hora', 'descripcion_prenda', 'monto_gs', 'metodo_pago', 'estado', 'sync_status', 'id']]
+        df_mostrar.columns = ['Fecha y Hora', 'Prenda', 'Monto (Gs)', 'Pago', 'Estado', 'Subido a Nube', 'ID Venta']
+        
+        # Cambiamos el 1 y 0 por emojis para que sea más visual
+        df_mostrar['Subido a Nube'] = df_mostrar['Subido a Nube'].apply(lambda x: "✅ Sí" if x == 1 else "⏳ Pendiente")
+        
+        # Mostramos la tabla interactiva
         st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
         
-        st.markdown("### 🗑️ Borrar una venta incorrecta")
-        col_del1, col_del2 = st.columns([2, 1])
-        with col_del1:
-            id_a_borrar = st.number_input("ID de la venta a eliminar:", min_value=1, step=1, format="%d")
-        with col_del2:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Eliminar Registro", type="primary"):
-                if db.eliminar_venta(id_a_borrar):
-                    st.success(f"Venta eliminada. Recarga la página.")
+        st.markdown("---")
+        st.subheader("❌ Anular una Venta")
+        st.write("Si te equivocaste al cargar, copiá el 'ID Venta' de la tabla de arriba, pegalo acá y anulá el registro. (No se borra, cambia su estado a 'anulada').")
+        
+        col_anular1, col_anular2 = st.columns([3, 1])
+        with col_anular1:
+            id_a_anular = st.text_input("Pegar el ID Venta completo aquí", label_visibility="collapsed")
+        with col_anular2:
+            if st.button("Anular Venta", type="primary"):
+                if id_a_anular:
+                    database.anular_venta(id_a_anular)
+                    sync.sincronizar_pendientes() # Avisa a Sheets que se anuló
+                    st.success("Venta anulada correctamente.")
+                    st.rerun()
                 else:
-                    st.error("No se pudo eliminar.")
+                    st.warning("Ingresa un ID primero.")
     else:
-        st.info("La base de datos está vacía.")
+        st.info("No hay ventas registradas todavía. ¡Cargá tu primera venta a la izquierda!")
