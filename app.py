@@ -105,6 +105,17 @@ st.markdown(
         background: var(--ink) !important;
         color: #FFFFFF !important;
     }
+    .stTabs [data-baseweb="tab"] p {
+        color: var(--muted) !important;
+        font-weight: 600 !important;
+    }
+    .stTabs [aria-selected="true"] p {
+        color: #FFFFFF !important;
+    }
+    [data-baseweb="tab-highlight"],
+    [data-baseweb="tab-border"] {
+        background-color: transparent !important;
+    }
 
     /* ---- Tarjetas ---- */
     .card {
