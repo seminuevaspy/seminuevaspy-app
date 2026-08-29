@@ -105,11 +105,13 @@ st.markdown(
         background: var(--ink) !important;
         color: #FFFFFF !important;
     }
-    .stTabs [data-baseweb="tab"] p {
+    .stTabs [data-baseweb="tab"],
+    .stTabs [data-baseweb="tab"] * {
         color: var(--muted) !important;
         font-weight: 600 !important;
     }
-    .stTabs [aria-selected="true"] p {
+    .stTabs [aria-selected="true"],
+    .stTabs [aria-selected="true"] * {
         color: #FFFFFF !important;
     }
     [data-baseweb="tab-highlight"],
