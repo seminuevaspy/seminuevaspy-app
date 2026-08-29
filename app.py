@@ -5,7 +5,7 @@ import pandas as pd
 
 st.set_page_config(
     page_title="Seminuevaspy · Caja",
-    page_icon="👗",
+    page_icon="🖤",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -19,26 +19,24 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
 
     :root {
-        --bg: #15111C;
-        --surface: #211A2B;
-        --surface-2: #2A2136;
-        --border: #362A44;
-        --wine: #7A2E3D;
-        --wine-light: #9C4257;
-        --gold: #C9A227;
-        --cream: #F3EAE0;
-        --muted: #A99BB0;
-        --sage: #7C9473;
-        --rust: #B5533C;
+        --bg: #FFFFFF;
+        --surface: #F7F7F7;
+        --surface-2: #FFFFFF;
+        --border: #E3E3E3;
+        --ink: #111111;
+        --ink-soft: #2E2E2E;
+        --muted: #767676;
+        --sage: #4C7A5A;
+        --rust: #B03A2E;
     }
 
     html, body, [class*="css"]  {
         font-family: 'Inter', sans-serif;
-        color: var(--cream);
+        color: var(--ink);
     }
 
     .stApp {
-        background: linear-gradient(180deg, #15111C 0%, #1A1522 100%);
+        background: var(--bg);
     }
 
     #MainMenu, footer, header { visibility: hidden; }
@@ -47,41 +45,40 @@ st.markdown(
     .marca-header {
         display: flex;
         align-items: center;
-        gap: 22px;
+        gap: 20px;
         padding: 28px 8px 20px 8px;
         border-bottom: 1px solid var(--border);
         margin-bottom: 28px;
     }
     .sello {
-        width: 64px;
-        height: 64px;
-        min-width: 64px;
+        width: 60px;
+        height: 60px;
+        min-width: 60px;
         border-radius: 50%;
-        border: 2px solid var(--gold);
+        border: 1.5px solid var(--ink);
         display: flex;
         align-items: center;
         justify-content: center;
-        transform: rotate(-8deg);
-        background: radial-gradient(circle at 35% 30%, #2A2136, #1A1522);
-        box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.08);
+        background: #0A0A0A;
     }
     .sello span {
         font-family: 'Fraunces', serif;
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 700;
-        color: var(--gold);
+        color: #FFFFFF;
+        letter-spacing: 0.5px;
     }
     .marca-titulo h1 {
         font-family: 'Fraunces', serif;
-        font-size: 34px;
+        font-size: 32px;
         font-weight: 600;
         margin: 0;
-        color: var(--cream);
-        letter-spacing: 0.3px;
+        color: var(--ink);
+        letter-spacing: 0.2px;
     }
     .marca-titulo p {
         font-family: 'Inter', sans-serif;
-        font-size: 13px;
+        font-size: 12.5px;
         letter-spacing: 2.5px;
         text-transform: uppercase;
         color: var(--muted);
@@ -105,8 +102,8 @@ st.markdown(
         background: transparent;
     }
     .stTabs [aria-selected="true"] {
-        background: var(--wine) !important;
-        color: var(--cream) !important;
+        background: var(--ink) !important;
+        color: #FFFFFF !important;
     }
 
     /* ---- Tarjetas ---- */
@@ -120,7 +117,7 @@ st.markdown(
         font-family: 'Fraunces', serif;
         font-size: 19px;
         font-weight: 600;
-        color: var(--cream);
+        color: var(--ink);
         margin-bottom: 4px;
     }
     .card-sub {
@@ -131,17 +128,17 @@ st.markdown(
 
     /* ---- Métricas ---- */
     .metrica {
-        background: var(--surface);
+        background: var(--surface-2);
         border: 1px solid var(--border);
-        border-left: 3px solid var(--gold);
+        border-left: 3px solid var(--ink);
         border-radius: 12px;
         padding: 16px 18px;
     }
     .metrica .num {
         font-family: 'Fraunces', serif;
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 600;
-        color: var(--cream);
+        color: var(--ink);
     }
     .metrica .label {
         font-size: 11.5px;
@@ -150,19 +147,38 @@ st.markdown(
         color: var(--muted);
     }
 
+    /* ---- Desglose de costos ---- */
+    .linea-costo {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dashed var(--border);
+        font-size: 14px;
+        color: var(--ink-soft);
+    }
+    .linea-costo.total {
+        border-bottom: none;
+        border-top: 1.5px solid var(--ink);
+        margin-top: 4px;
+        padding-top: 12px;
+        font-weight: 700;
+        color: var(--ink);
+    }
+    .linea-costo span.valor { font-weight: 600; }
+
     /* ---- Inputs ---- */
     .stTextInput input, .stNumberInput input, .stSelectbox div[data-baseweb="select"] > div {
-        background: var(--surface-2) !important;
+        background: #FFFFFF !important;
         border: 1px solid var(--border) !important;
         border-radius: 10px !important;
-        color: var(--cream) !important;
+        color: var(--ink) !important;
     }
-    label, .stMarkdown p { color: var(--muted) !important; }
+    label, .stMarkdown p { color: var(--ink-soft) !important; }
 
     /* ---- Botones ---- */
     .stButton > button {
-        background: var(--wine);
-        color: var(--cream);
+        background: var(--ink);
+        color: #FFFFFF;
         border: none;
         border-radius: 10px;
         padding: 10px 18px;
@@ -171,16 +187,16 @@ st.markdown(
         transition: background 0.15s ease;
     }
     .stButton > button:hover {
-        background: var(--wine-light);
-        color: var(--cream);
+        background: var(--ink-soft);
+        color: #FFFFFF;
     }
     .boton-sync button {
-        background: var(--gold) !important;
-        color: #1A1522 !important;
+        background: var(--ink) !important;
+        color: #FFFFFF !important;
         width: 100%;
     }
     .boton-sync button:hover {
-        background: #DDB84A !important;
+        background: var(--ink-soft) !important;
     }
     .boton-peligro button {
         background: transparent !important;
@@ -189,7 +205,7 @@ st.markdown(
     }
     .boton-peligro button:hover {
         background: var(--rust) !important;
-        color: var(--cream) !important;
+        color: #FFFFFF !important;
     }
 
     /* ---- Dataframe ---- */
@@ -208,12 +224,40 @@ st.markdown(
 db.init_db()
 
 # ---------------------------------------------------------------------------
+# CONSTANTES DE NEGOCIO
+# ---------------------------------------------------------------------------
+VENDEDORAS = ["Romina", "Pamela", "Mama"]
+
+COMISION_ROMINA = 0.07
+COMISION_PAMELA = 0.07
+COMISION_DAMIAN = 0.03
+PORCENTAJE_BRUTO_DUENA = 0.60  # parte de las ventas totales que corresponde a la dueña antes de restar sueldos y costos fijos
+
+COSTOS_FIJOS = {
+    "Alquiler de la tienda": 2_300_000,
+    "Internet": 100_000,
+    "Agua y camión de basura": 110_000,
+    "Luz": 150_000,
+}
+
+MESES_ES = {
+    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio",
+    7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
+}
+
+
+def etiqueta_mes(periodo: str) -> str:
+    anio, mes = periodo.split("-")
+    return f"{MESES_ES[int(mes)]} {anio}"
+
+
+# ---------------------------------------------------------------------------
 # ENCABEZADO
 # ---------------------------------------------------------------------------
 st.markdown(
     """
     <div class="marca-header">
-        <div class="sello"><span>SP</span></div>
+        <div class="sello"><span>SN</span></div>
         <div class="marca-titulo">
             <h1>Seminuevaspy</h1>
             <p>Sistema de caja &amp; ventas</p>
@@ -223,7 +267,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-tab1, tab2, tab3 = st.tabs(["Nueva venta", "Historial", "Sincronización"])
+tab1, tab2, tab3, tab4 = st.tabs(["Nueva venta", "Historial", "Resumen financiero", "Sincronización"])
 
 # ---------------------------------------------------------------------------
 # TAB 1 · NUEVA VENTA
@@ -237,22 +281,19 @@ with tab1:
         st.markdown('<div class="card-sub">Completá los datos y guardá — se sincroniza sola con Sheets.</div>', unsafe_allow_html=True)
 
         with st.form("form_nueva_venta", clear_on_submit=True):
+            monto = st.number_input(
+                "Precio de la prenda (₲)", min_value=0, step=10000, format="%d",
+                value=None, placeholder="Ej: 150000",
+            )
             descripcion = st.text_input("Descripción de la prenda", placeholder="Ej: Campera de cuero negra")
 
             c1, c2 = st.columns(2)
             with c1:
-                monto = st.number_input(
-                    "Monto (₲)", min_value=0, step=10000, format="%d",
-                    value=None, placeholder="Ej: 150000",
-                )
-            with c2:
                 metodo = st.selectbox("Método de pago", ["Efectivo", "Transferencia", "QR"])
+            with c2:
+                vendedora = st.selectbox("Vendedora", VENDEDORAS)
 
-            c3, c4 = st.columns(2)
-            with c3:
-                clienta = st.text_input("Nombre de la clienta", placeholder="Opcional")
-            with c4:
-                vendedora = st.selectbox("Vendedora", ["Romina", "Otra"])
+            clienta = st.text_input("Nombre de la clienta", placeholder="Opcional")
 
             enviar = st.form_submit_button("Guardar venta", use_container_width=True)
 
@@ -360,9 +401,120 @@ with tab2:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# TAB 3 · SINCRONIZACIÓN
+# TAB 3 · RESUMEN FINANCIERO
 # ---------------------------------------------------------------------------
 with tab3:
+    df_fin = pd.DataFrame(db.obtener_todas_las_ventas())
+
+    if df_fin.empty:
+        st.info("Todavía no hay ventas registradas para calcular un resumen.")
+    else:
+        df_fin["fecha_dt"] = pd.to_datetime(df_fin["fecha_hora"], errors="coerce")
+        df_fin["periodo"] = df_fin["fecha_dt"].dt.to_period("M").astype(str)
+
+        # Solo ventas activas cuentan para la facturación real
+        df_activas = df_fin[df_fin["estado"] == "activa"]
+
+        periodos_disponibles = sorted(df_fin["periodo"].dropna().unique(), reverse=True)
+
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">Resumen financiero</div>', unsafe_allow_html=True)
+        st.markdown('<div class="card-sub">Elegí el mes para ver la facturación, los sueldos y la ganancia neta de mamá.</div>', unsafe_allow_html=True)
+
+        opciones_labels = [etiqueta_mes(p) for p in periodos_disponibles]
+        seleccion_label = st.selectbox("Mes", opciones_labels)
+        periodo_seleccionado = periodos_disponibles[opciones_labels.index(seleccion_label)]
+
+        df_mes = df_activas[df_activas["periodo"] == periodo_seleccionado]
+        total_mes = float(df_mes["monto_gs"].sum())
+
+        comision_romina = total_mes * COMISION_ROMINA
+        comision_pamela = total_mes * COMISION_PAMELA
+        comision_damian = total_mes * COMISION_DAMIAN
+        total_sueldos = comision_romina + comision_pamela + comision_damian
+
+        bruto_duena = total_mes * PORCENTAJE_BRUTO_DUENA
+        total_costos_fijos = sum(COSTOS_FIJOS.values())
+        ganancia_neta_duena = bruto_duena - total_sueldos - total_costos_fijos
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        c1, c2, c3 = st.columns(3)
+        c1.markdown(
+            f"""<div class="metrica"><div class="num">₲ {total_mes:,.0f}</div>
+            <div class="label">Venta bruta del mes ({len(df_mes)} ventas)</div></div>""",
+            unsafe_allow_html=True,
+        )
+        c2.markdown(
+            f"""<div class="metrica"><div class="num">₲ {total_sueldos:,.0f}</div>
+            <div class="label">Total sueldos (17%)</div></div>""",
+            unsafe_allow_html=True,
+        )
+        c3.markdown(
+            f"""<div class="metrica" style="border-left-color: var(--sage);"><div class="num">₲ {ganancia_neta_duena:,.0f}</div>
+            <div class="label">Ganancia neta de mamá</div></div>""",
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        col_sueldos, col_duena = st.columns(2)
+
+        with col_sueldos:
+            st.markdown('<div class="card-title" style="font-size:16px;">Sueldos del mes</div>', unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                <div class="linea-costo"><span>Romina (7%)</span><span class="valor">₲ {comision_romina:,.0f}</span></div>
+                <div class="linea-costo"><span>Pamela (7%)</span><span class="valor">₲ {comision_pamela:,.0f}</span></div>
+                <div class="linea-costo"><span>Damián (3%)</span><span class="valor">₲ {comision_damian:,.0f}</span></div>
+                <div class="linea-costo total"><span>Total sueldos</span><span class="valor">₲ {total_sueldos:,.0f}</span></div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        with col_duena:
+            st.markdown('<div class="card-title" style="font-size:16px;">Ganancia neta de mamá</div>', unsafe_allow_html=True)
+            filas_costos = "".join(
+                f'<div class="linea-costo"><span>{nombre}</span><span class="valor">− ₲ {valor:,.0f}</span></div>'
+                for nombre, valor in COSTOS_FIJOS.items()
+            )
+            st.markdown(
+                f"""
+                <div class="linea-costo"><span>60% de venta bruta</span><span class="valor">₲ {bruto_duena:,.0f}</span></div>
+                <div class="linea-costo"><span>Sueldos (17% de venta bruta)</span><span class="valor">− ₲ {total_sueldos:,.0f}</span></div>
+                {filas_costos}
+                <div class="linea-costo total"><span>Ganancia neta</span><span class="valor">₲ {ganancia_neta_duena:,.0f}</span></div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title" style="font-size:16px;">Todos los meses</div>', unsafe_allow_html=True)
+
+        resumen_todos = (
+            df_activas.groupby("periodo")["monto_gs"]
+            .sum()
+            .reindex(periodos_disponibles)
+            .fillna(0)
+        )
+        df_todos = pd.DataFrame({
+            "Mes": [etiqueta_mes(p) for p in resumen_todos.index],
+            "Venta bruta (₲)": [f"₲ {v:,.0f}" for v in resumen_todos.values],
+            "Ganancia neta de mamá (₲)": [
+                f"₲ {(v * PORCENTAJE_BRUTO_DUENA - v * (COMISION_ROMINA + COMISION_PAMELA + COMISION_DAMIAN) - total_costos_fijos):,.0f}"
+                for v in resumen_todos.values
+            ],
+        })
+        st.dataframe(df_todos, use_container_width=True, hide_index=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------------------------------------------------------------------------
+# TAB 4 · SINCRONIZACIÓN
+# ---------------------------------------------------------------------------
+with tab4:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="card-title">Sincronización manual</div>', unsafe_allow_html=True)
     st.markdown(
